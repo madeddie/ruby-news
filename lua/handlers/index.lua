@@ -39,6 +39,7 @@ local function handle()
 
     local cache = ngx.shared.news_cache
     local feed
+    local fetch_err
     local cache_key = "feed:" .. loc .. ":" .. lang .. ":" .. (section or "all")
     if cache then
         local cached = cache:get(cache_key)
@@ -52,13 +53,10 @@ local function handle()
     end
     if not feed then
         local fetcher = require "rss_fetcher"
-        local fetch_err
         feed, fetch_err = fetcher.fetch_feed(section, loc, lang)
         if not feed then
             ngx.log(ngx.ERR, "fetch_feed failed: ", tostring(fetch_err))
-        end
-
-        if feed then
+        else
             local cjson = require "cjson"
             cache:set(cache_key, cjson.encode(feed), 300)
         end
