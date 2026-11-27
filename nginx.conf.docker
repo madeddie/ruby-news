@@ -24,7 +24,7 @@ http {
         listen 80;
         server_name _;
 
-        resolver 8.8.8.8 8.8.4.4 ipv6=off;
+        resolver __NAMESERVER__ valid=10s ipv6=off;
         resolver_timeout 5s;
 
         location = / {

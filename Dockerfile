@@ -27,8 +27,10 @@ RUN find /etc/nginx/lua -name '*.so' -delete
 COPY nginx.conf.docker /etc/nginx/nginx.conf
 WORKDIR /app
 COPY readability_service.py /app/readability_service.py
-RUN chmod +x /app/readability_service.py
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/readability_service.py /app/entrypoint.sh
 
 EXPOSE 80 5000
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
