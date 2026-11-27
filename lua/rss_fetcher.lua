@@ -5,25 +5,36 @@ local function http_get(url)
     local httpc = http.new()
     httpc:set_timeout(15000)
 
-    local res, err = httpc:request_uri(url, {
+    local opts = {
         method = "GET",
         headers = {
             ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
         ssl_verify = false,
-    })
+    }
 
-    if not res then
-        ngx.log(ngx.ERR, "http_get failed: ", err)
-        return nil, "request failed: " .. tostring(err)
+    -- Follow up to 5 redirects
+    for _ = 1, 5 do
+        local res, err = httpc:request_uri(url, opts)
+        if not res then
+            ngx.log(ngx.ERR, "http_get failed: ", err)
+            return nil, "request failed: " .. tostring(err)
+        end
+
+        if res.status == 301 or res.status == 302 or res.status == 307 or res.status == 308 then
+            url = res.headers["Location"]
+            if not url then
+                return nil, "redirect with no Location header"
+            end
+        elseif res.status == 200 then
+            return res.body
+        else
+            ngx.log(ngx.ERR, "http_get non-200: ", res.status)
+            return nil, "HTTP " .. res.status
+        end
     end
 
-    if res.status ~= 200 then
-        ngx.log(ngx.ERR, "http_get non-200: ", res.status)
-        return nil, "HTTP " .. res.status
-    end
-
-    return res.body
+    return nil, "too many redirects"
 end
 
 local function parse_xml_feed(body)
