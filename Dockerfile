@@ -5,7 +5,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libnginx-mod-http-lua \
         ca-certificates \
         curl \
-    && rm -rf /var/lib/apt/lists/*
+        python3 \
+        python3-pip \
+    && pip3 install --no-cache-dir readability-lxml --break-system-packages \
+    && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 
 # Install lua-resty-http and dkjson (as cjson drop-in; identical API, pure Lua)
 RUN mkdir -p /etc/nginx/lua/resty \
@@ -22,7 +25,8 @@ COPY lua/ /etc/nginx/lua/
 # Remove any stray .so files that dependencies may have dropped here
 RUN find /etc/nginx/lua -name '*.so' -delete
 COPY nginx.conf.docker /etc/nginx/nginx.conf
+COPY readability_service.py /app/readability_service.py
 
-EXPOSE 80
+EXPOSE 80 5000
 
 CMD ["nginx", "-g", "daemon off;"]
