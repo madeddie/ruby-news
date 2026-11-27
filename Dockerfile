@@ -35,6 +35,10 @@ http {\n\
         resolver 8.8.8.8 8.8.4.4 ipv6=off;\n\
         resolver_timeout 5s;\n\
 \n\
+        location = / {\n\
+            return 301 /news;\n\
+        }\n\
+\n\
         location /news {\n\
             content_by_lua_file /etc/nginx/lua/handlers/index.lua;\n\
         }\n\
