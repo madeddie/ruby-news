@@ -19,6 +19,8 @@ RUN mkdir -p /etc/nginx/lua/resty \
         https://raw.githubusercontent.com/LuaDist/dkjson/master/dkjson.lua
 
 COPY lua/ /etc/nginx/lua/
+# Remove any stray .so files that dependencies may have dropped here
+RUN find /etc/nginx/lua -name '*.so' -delete
 COPY nginx.conf.docker /etc/nginx/nginx.conf
 
 EXPOSE 80
