@@ -1,26 +1,29 @@
 local _M = {}
 
-local function http_get(url, timeout_ms)
-    local timeout = (timeout_ms or 15000) / 1000
-    local cmd = string.format(
-        'curl -sS --max-time %d -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" "%s"',
-        timeout,
-        url
-    )
+local function http_get(url)
+    local http = require "resty.http"
+    local httpc = http.new()
+    httpc:set_timeout(15000)
 
-    local reader = io.popen(cmd, "r")
-    if not reader then
+    local res, err = httpc:request_uri(url, {
+        method = "GET",
+        headers = {
+            ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        ssl_verify = true,
+    })
+
+    if not res then
+        ngx.log(ngx.ERR, "http_get failed: ", err)
         return nil
     end
 
-    local body = reader:read("*a")
-    reader:close()
-
-    if not body or #body == 0 then
+    if res.status ~= 200 then
+        ngx.log(ngx.ERR, "http_get non-200: ", res.status)
         return nil
     end
 
-    return body
+    return res.body
 end
 
 local function parse_xml_feed(body)

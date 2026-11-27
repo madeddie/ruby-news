@@ -3,7 +3,13 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
         libnginx-mod-http-lua \
+        ca-certificates \
         curl \
+    && mkdir -p /etc/nginx/lua/resty \
+    && curl -sLo /etc/nginx/lua/resty/http.lua \
+        https://raw.githubusercontent.com/ledgetech/lua-resty-http/v0.17.2/lib/resty/http.lua \
+    && curl -sLo /etc/nginx/lua/resty/http_connect.lua \
+        https://raw.githubusercontent.com/ledgetech/lua-resty-http/v0.17.2/lib/resty/http_connect.lua \
     && rm -rf /var/lib/apt/lists/*
 
 COPY lua/ /etc/nginx/lua/
