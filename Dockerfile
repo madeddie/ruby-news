@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         https://raw.githubusercontent.com/ledgetech/lua-resty-http/v0.17.2/lib/resty/http.lua \
     && curl -sLo /etc/nginx/lua/resty/http_connect.lua \
         https://raw.githubusercontent.com/ledgetech/lua-resty-http/v0.17.2/lib/resty/http_connect.lua \
+    && curl -sLo /etc/nginx/lua/resty/http_headers.lua \
+        https://raw.githubusercontent.com/ledgetech/lua-resty-http/v0.17.2/lib/resty/http_headers.lua \
     && rm -rf /var/lib/apt/lists/*
 
 COPY lua/ /etc/nginx/lua/
