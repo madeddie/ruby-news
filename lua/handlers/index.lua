@@ -30,8 +30,8 @@ local function strip_cdata(s)
     return (s:gsub("^%s*<%!%[CDATA%[(.-)%]%]>%s*$", "%1"))
 end
 
--- Parse description HTML into sub-article list
-local function parse_sub_articles(desc, loc)
+-- Parse description HTML into sub-article list, skipping main_link if given
+local function parse_sub_articles(desc, loc, main_link)
     desc = strip_cdata(desc)
     local items = {}
     for li in desc:gmatch("<li>(.-)</li>") do
@@ -41,7 +41,7 @@ local function parse_sub_articles(desc, loc)
         if not src then
             src = li:match("&nbsp;&nbsp;([^<&]+)")
         end
-        if url and title and title ~= "" then
+        if url and title and title ~= "" and url ~= main_link then
             local article_url = "/news/article?loc=" .. loc .. "&a=" .. url
             table.insert(items, {
                 url    = article_url,
@@ -210,7 +210,7 @@ local function handle()
             out[#out + 1] = '<small>' .. meta .. '</small>'
         end
 
-        local sub_articles = parse_sub_articles(item.description or "", loc)
+        local sub_articles = parse_sub_articles(item.description or "", loc, link)
         if #sub_articles > 0 then
             out[#out + 1] = '<ul>'
             for _, sub in ipairs(sub_articles) do
