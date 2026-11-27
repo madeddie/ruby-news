@@ -122,8 +122,8 @@ local function handle()
         local error_body =
             '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">' ..
             '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">' ..
-            '<title>ruby.news: Error</title>' .. css .. '</head><body class="column">' ..
-            '<center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center>' ..
+            '<title>flatland.nyc/news: Error</title>' .. css .. '</head><body class="column">' ..
+            '<center><h1><b>flatland.nyc/news</b></h1></center>' ..
             '<hr><small>Unable to load news feed. Please try again later.' ..
             (fetch_err and (" (" .. tostring(fetch_err) .. ")") or "") ..
             '</small></body></html>'
@@ -137,8 +137,8 @@ local function handle()
         local error_body =
             '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">' ..
             '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">' ..
-            '<title>ruby.news: No Articles</title>' .. css .. '</head><body class="column">' ..
-            '<center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center>' ..
+            '<title>flatland.nyc/news: No Articles</title>' .. css .. '</head><body class="column">' ..
+            '<center><h1><b>flatland.nyc/news</b></h1></center>' ..
             '<hr><small>' .. msg .. '</small></body></html>'
         send_response(404, error_body)
     end
@@ -161,13 +161,11 @@ local function handle()
     out[#out + 1] = '<html><head>'
     out[#out + 1] = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
     out[#out + 1] = '<meta name="viewport" content="width=device-width, initial-scale=1">'
-    out[#out + 1] = '<title>ruby.news: Headlines From the Future</title>'
+    out[#out + 1] = '<title>flatland.nyc/news</title>'
     out[#out + 1] = css
     out[#out + 1] = '</head><body class="column">'
 
-    out[#out + 1] = '<center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center>'
-    out[#out + 1] = '<hr>'
-    out[#out + 1] = '<center><small>Basic HTML Google News for vintage computers. Built by <a href="https://youtube.com/ActionRetro" target="_blank"><b>Action Retro</b></a> on YouTube. Updated to Lua/nginx by <a href="https://rubymaelstrom.com">Ruby</a>.</small></center>'
+    out[#out + 1] = '<center><h1><b>flatland.nyc/news</b></h1></center>'
 
     -- Nav
     out[#out + 1] = '<center><small>'
@@ -234,8 +232,8 @@ if not ok then
     ngx.status = 502
     ngx.say('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN"><html><head>' ..
         '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' ..
-        '<title>ruby.news: Error</title></head><body>' ..
-        '<center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center>' ..
+        '<title>flatland.nyc/news: Error</title></head><body>' ..
+        '<center><h1><b>flatland.nyc/news</b></h1></center>' ..
         '<hr><small>Error: ' .. tostring(err) .. '</small></body></html>')
     ngx.exit(ngx.OK)
 end
