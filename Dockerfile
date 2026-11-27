@@ -25,7 +25,9 @@ COPY lua/ /etc/nginx/lua/
 # Remove any stray .so files that dependencies may have dropped here
 RUN find /etc/nginx/lua -name '*.so' -delete
 COPY nginx.conf.docker /etc/nginx/nginx.conf
+WORKDIR /app
 COPY readability_service.py /app/readability_service.py
+RUN chmod +x /app/readability_service.py
 
 EXPOSE 80 5000
 
