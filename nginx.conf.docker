@@ -16,7 +16,6 @@ http {
     lua_shared_dict news_cache 10m;
     lua_shared_dict article_cache 20m;
     lua_package_path "/etc/nginx/lua/?.lua;;";
-    lua_package_cpath "/etc/nginx/lua/?.so;;";
 
     server {
         listen 80;
