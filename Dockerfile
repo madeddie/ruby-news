@@ -3,6 +3,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
         libnginx-mod-http-lua \
+        lua-resty-string \
         ca-certificates \
         curl \
     && mkdir -p /etc/nginx/lua/resty \
