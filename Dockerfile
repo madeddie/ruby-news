@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY lua/ /etc/nginx/lua/
 
 RUN printf '\
+load_module modules/ndk_http_module.so;\n\
+load_module modules/ngx_http_lua_module.so;\n\
+\n\
 worker_processes auto;\n\
 \n\
 events {\n\
