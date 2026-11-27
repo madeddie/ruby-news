@@ -62,12 +62,21 @@ local function handle()
         end
     end
 
-    if not feed or not feed.items or #feed.items == 0 then
+    if not feed then
         local error_body =
             '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><html><head><title>ruby.news: Error</title></head><body><center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center><hr><small>Unable to load news feed. Please try again later.' ..
             (fetch_err and (" (" .. tostring(fetch_err) .. ")") or "") ..
             '</small></body></html>'
         send_response(502, error_body)
+    end
+
+    if not feed.items or #feed.items == 0 then
+        local msg = section
+            and ('No articles available for the <b>' .. section:upper() .. '</b> section in this location. <a href="/news?loc=' .. loc .. '">View top news instead.</a>')
+            or 'No articles available for this location. <a href="/news">View US top news.</a>'
+        local error_body =
+            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><html><head><title>ruby.news: No Articles</title></head><body><center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center><hr><small>' .. msg .. '</small></body></html>'
+        send_response(404, error_body)
     end
 
     local nav_links = {
