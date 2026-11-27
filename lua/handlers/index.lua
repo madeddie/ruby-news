@@ -52,7 +52,11 @@ local function handle()
     end
     if not feed then
         local fetcher = require "rss_fetcher"
-        feed = fetcher.fetch_feed(section, loc, lang)
+        local fetch_err
+        feed, fetch_err = fetcher.fetch_feed(section, loc, lang)
+        if not feed then
+            ngx.log(ngx.ERR, "fetch_feed failed: ", tostring(fetch_err))
+        end
 
         if feed then
             local cjson = require "cjson"
@@ -61,9 +65,10 @@ local function handle()
     end
 
     if not feed or not feed.items or #feed.items == 0 then
-        local error_body = string.format(
-            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><html><head><title>ruby.news: Error</title></head><body><center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center><hr><small>Unable to load news feed. Please try again later.</small></body></html>'
-        )
+        local error_body =
+            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><html><head><title>ruby.news: Error</title></head><body><center><h1><b>ruby.news:</b> <font color="#9400d3"><i>Headlines from the Future</i></font></h1></center><hr><small>Unable to load news feed. Please try again later.' ..
+            (fetch_err and (" (" .. tostring(fetch_err) .. ")") or "") ..
+            '</small></body></html>'
         send_response(502, error_body)
     end
 

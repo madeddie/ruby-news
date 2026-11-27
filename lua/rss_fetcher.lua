@@ -10,17 +10,17 @@ local function http_get(url)
         headers = {
             ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
-        ssl_verify = true,
+        ssl_verify = false,
     })
 
     if not res then
         ngx.log(ngx.ERR, "http_get failed: ", err)
-        return nil
+        return nil, "request failed: " .. tostring(err)
     end
 
     if res.status ~= 200 then
         ngx.log(ngx.ERR, "http_get non-200: ", res.status)
-        return nil
+        return nil, "HTTP " .. res.status
     end
 
     return res.body
@@ -115,13 +115,13 @@ function _M.fetch_feed(section, loc, lang)
         )
     end
 
-    local body = http_get(url)
+    local body, err = http_get(url)
     if body and #body > 0 then
         local feed = parse_xml_feed(body)
         return feed
     end
 
-    return nil
+    return nil, err or "empty response"
 end
 
 return _M
