@@ -56,21 +56,36 @@ local function handle()
 
     readable_article = readable_article:gsub("strong>", "b>"):gsub("em>", "i>")
 
+    local css = [[<style type="text/css"><!--
+body { font-size: 1.1em; line-height: 1.7; overflow-wrap: break-word; margin: 0; padding: 0.75em; }
+@media only screen and (min-width: 50em) {
+body { max-width: 40em; margin: 0 auto; padding: 0 2em; }
+}
+@media (prefers-color-scheme: dark) {
+body { background-color: #111; color: #ddd; }
+a { color: #6af; }
+a:visited { color: #a8c; }
+}
+--></style>]]
+
     local out = {}
     out[#out + 1] = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">'
-    out[#out + 1] = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
     out[#out + 1] = '<html><head>'
+    out[#out + 1] = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
+    out[#out + 1] = '<meta name="viewport" content="width=device-width, initial-scale=1">'
 
     local page_title = string_utils.clean_str(title or "flatland.nyc/news")
-    out[#out + 1] = '\t<title>' .. page_title .. '</title>'
+    out[#out + 1] = '<title>' .. page_title .. '</title>'
+    out[#out + 1] = css
     out[#out + 1] = '</head><body>'
 
-    out[#out + 1] = '   <small><a href="/news?loc=' .. loc .. '"> < Back to flatland.nyc/news' .. loc .. ' front page</a></small>'
-    out[#out + 1] = '   <h1>' .. page_title .. '</h1>'
-
-    out[#out + 1] = '   <p><small><a href="' .. actual_article_url .. '" target="_blank">Original source</a> (on modern site)</small></p>'
-    out[#out + 1] = '   <p><font size="4">' .. readable_article .. '</font></p>'
-    out[#out + 1] = '   <small><a href="/news?loc=' .. loc .. '"> < Back to flatland.nyc/news' .. loc .. ' front page</a></small>'
+    out[#out + 1] = '<small><a href="/news?loc=' .. loc .. '">&lt; Back to flatland.nyc/news ' .. loc .. '</a></small>'
+    out[#out + 1] = '<h1>' .. page_title .. '</h1>'
+    out[#out + 1] = '<p><small><a href="' .. actual_article_url .. '" target="_blank">Original source</a></small></p>'
+    out[#out + 1] = '<hr>'
+    out[#out + 1] = readable_article
+    out[#out + 1] = '<hr>'
+    out[#out + 1] = '<small><a href="/news?loc=' .. loc .. '">&lt; Back to flatland.nyc/news ' .. loc .. '</a></small>'
 
     out[#out + 1] = '</body></html>'
 
