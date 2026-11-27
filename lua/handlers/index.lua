@@ -81,6 +81,11 @@ body.column { max-width: 46em; margin: 0 auto; }
 @media only screen and (max-width: 36em) {
 body { margin: 0; padding: 0.4em 0.75em; }
 }
+@media (prefers-color-scheme: dark) {
+body { background-color: #111; color: #ddd; }
+a { color: #6af; }
+a:visited { color: #a8c; }
+}
 --></style>]]
 
 local function handle()
