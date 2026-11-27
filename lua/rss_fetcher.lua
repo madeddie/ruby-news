@@ -2,8 +2,6 @@ local _M = {}
 
 local function http_get(url)
     local http = require "resty.http"
-    local httpc = http.new()
-    httpc:set_timeout(15000)
 
     local opts = {
         method = "GET",
@@ -13,9 +11,11 @@ local function http_get(url)
         ssl_verify = false,
     }
 
-    -- Follow up to 5 redirects
+    -- Follow up to 5 redirects, creating a fresh client each time
     for _ = 1, 5 do
-        local res, err = httpc:request_uri(url, opts)
+        local httpc2 = http.new()
+        httpc2:set_timeout(15000)
+        local res, err = httpc2:request_uri(url, opts)
         if not res then
             ngx.log(ngx.ERR, "http_get failed: ", err)
             return nil, "request failed: " .. tostring(err)
