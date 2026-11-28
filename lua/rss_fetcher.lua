@@ -1,23 +1,25 @@
 local _M = {}
 
-local REUTERS_SECTIONS = {
-    world         = "worldNews",
-    business      = "businessNews",
-    technology    = "technologyNews",
-    health        = "healthNews",
-    sports        = "sportsNews",
-    science       = "scienceNews",
-    entertainment = "entertainmentNews",
+-- NPR feed IDs: https://feeds.npr.org/FEEDID/rss.xml
+local NPR_FEEDS = {
+    world         = "1004",
+    business      = "1006",
+    technology    = "1019",
+    health        = "1013",
+    sports        = "1055",
+    science       = "1007",
+    entertainment = "1008",
 }
 
-local BBC_SECTIONS = {
-    world         = "world",
-    business      = "business",
-    technology    = "technology",
-    health        = "health",
-    sports        = "sport",
-    science       = "science_and_environment",
-    entertainment = "entertainment_and_arts",
+-- BBC uses full URLs because sport lives outside /news/
+local BBC_SECTION_URLS = {
+    world         = "https://feeds.bbci.co.uk/news/world/rss.xml",
+    business      = "https://feeds.bbci.co.uk/news/business/rss.xml",
+    technology    = "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    health        = "https://feeds.bbci.co.uk/news/health/rss.xml",
+    sports        = "https://feeds.bbci.co.uk/sport/rss.xml",
+    science       = "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+    entertainment = "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
 }
 
 local function http_get(url)
@@ -112,14 +114,12 @@ end
 function _M.fetch_feed(news_source, section, loc, lang)
     local url
 
-    if news_source == "reuters" then
-        local feed_name = section and REUTERS_SECTIONS[section] or "topNews"
-        url = "https://feeds.reuters.com/reuters/" .. feed_name
+    if news_source == "npr" then
+        local feed_id = section and NPR_FEEDS[section] or "1001"
+        url = "https://feeds.npr.org/" .. feed_id .. "/rss.xml"
     elseif news_source == "bbc" then
-        local feed_name = section and BBC_SECTIONS[section]
-        url = feed_name
-            and ("https://feeds.bbci.co.uk/news/" .. feed_name .. "/rss.xml")
-            or  "https://feeds.bbci.co.uk/news/rss.xml"
+        url = (section and BBC_SECTION_URLS[section])
+            or "https://feeds.bbci.co.uk/news/rss.xml"
     else
         if section then
             url = string.format(

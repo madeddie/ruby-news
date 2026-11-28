@@ -89,12 +89,12 @@ a:visited { color: #a8c; }
 --></style>]]
 
 local SOURCE_LABELS = {
-    google  = "Google News",
-    reuters = "Reuters",
-    bbc     = "BBC News",
+    google = "Google News",
+    npr    = "NPR",
+    bbc    = "BBC News",
 }
 
-local SOURCES = { "google", "reuters", "bbc" }
+local SOURCES = { "google", "npr", "bbc" }
 
 local function handle()
     local section    = get_param("section")
@@ -103,6 +103,8 @@ local function handle()
     local news_source = get_param("source") or "google"
 
     if not SOURCE_LABELS[news_source] then news_source = "google" end
+    -- legacy redirect: old ?source=reuters links → npr
+    if news_source == "reuters" then news_source = "npr" end
     loc = loc:upper()
 
     local uri = ngx.var.request_uri or ""

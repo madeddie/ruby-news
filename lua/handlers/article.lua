@@ -66,8 +66,7 @@ local function handle()
 
     local ALLOWED_PREFIXES = {
         "https://news.google.com/",
-        "https://www.reuters.com/",
-        "https://reuters.com/",
+        "https://www.npr.org/",
         "https://www.bbc.com/",
         "https://www.bbc.co.uk/",
     }
@@ -79,7 +78,7 @@ local function handle()
         end
     end
     if not allowed then
-        send_error(400, loc, "Invalid article URL.", "Only Google News, Reuters, and BBC URLs are supported.", nil)
+        send_error(400, loc, "Invalid article URL.", "Only Google News, NPR, and BBC URLs are supported.", nil)
     end
 
     local actual_article_url
