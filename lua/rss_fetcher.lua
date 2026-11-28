@@ -58,14 +58,19 @@ local function http_get(url)
     return nil, "too many redirects"
 end
 
+local function strip_cdata(s)
+    return (s:gsub("^%s*<%!%[CDATA%[(.-)%]%]>%s*$", "%1"))
+end
+
+local function decode(s)
+    return strip_cdata(s:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">"))
+end
+
 local function parse_xml_feed(body)
     local feed = { title = "", items = {} }
 
     local title_match = body:match("<title>(.-)</title>")
-    if title_match then
-        title_match = title_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-        feed.title = title_match
-    end
+    if title_match then feed.title = decode(title_match) end
 
     local items_start = 1
     while true do
@@ -81,19 +86,13 @@ local function parse_xml_feed(body)
         local title, link, description, pub_date = "", "", "", ""
 
         local t_match = item_html:match("<title>(.-)</title>")
-        if t_match then
-            title = t_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-        end
+        if t_match then title = decode(t_match) end
 
         local l_match = item_html:match("<link>(.-)</link>")
-        if l_match then
-            link = l_match:gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-        end
+        if l_match then link = decode(l_match) end
 
         local d_match = item_html:match("<description>(.-)</description>")
-        if d_match then
-            description = d_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-        end
+        if d_match then description = decode(d_match) end
 
         local pd_match = item_html:match("<pubDate>(.-)</pubDate>")
         if pd_match then pub_date = pd_match end
