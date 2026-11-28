@@ -92,9 +92,10 @@ local SOURCE_LABELS = {
     google = "Google News",
     npr    = "NPR",
     bbc    = "BBC News",
+    hn     = "Hacker News",
 }
 
-local SOURCES = { "google", "npr", "bbc" }
+local SOURCES = { "google", "npr", "bbc", "hn" }
 
 local function handle()
     local section    = get_param("section")
@@ -160,24 +161,29 @@ local function handle()
         send_response(404, error_body)
     end
 
-    -- Build section nav (NATION only available on Google News)
+    -- Build section nav
     local base = "source=" .. news_source .. "&loc=" .. loc
-    local nav_links = {
-        { label = "TOP",           params = base },
-        { label = "WORLD",         params = base .. "&section=world" },
-    }
-    if news_source == "google" then
-        table.insert(nav_links, { label = "NATION", params = base .. "&section=nation" })
-    end
-    for _, v in ipairs({
-        { "BUSINESS",      "business" },
-        { "TECHNOLOGY",    "technology" },
-        { "ENTERTAINMENT", "entertainment" },
-        { "SPORTS",        "sports" },
-        { "SCIENCE",       "science" },
-        { "HEALTH",        "health" },
-    }) do
-        table.insert(nav_links, { label = v[1], params = base .. "&section=" .. v[2] })
+    local nav_links = {}
+    if news_source == "hn" then
+        for _, v in ipairs({ {"TOP",""}, {"ASK","ask"}, {"SHOW","show"}, {"JOBS","jobs"} }) do
+            table.insert(nav_links, { label = v[1], params = base .. (v[2] ~= "" and ("&section=" .. v[2]) or "") })
+        end
+    else
+        table.insert(nav_links, { label = "TOP",   params = base })
+        table.insert(nav_links, { label = "WORLD", params = base .. "&section=world" })
+        if news_source == "google" then
+            table.insert(nav_links, { label = "NATION", params = base .. "&section=nation" })
+        end
+        for _, v in ipairs({
+            { "BUSINESS",      "business" },
+            { "TECHNOLOGY",    "technology" },
+            { "ENTERTAINMENT", "entertainment" },
+            { "SPORTS",        "sports" },
+            { "SCIENCE",       "science" },
+            { "HEALTH",        "health" },
+        }) do
+            table.insert(nav_links, { label = v[1], params = base .. "&section=" .. v[2] })
+        end
     end
 
     local out = {}
@@ -222,6 +228,8 @@ local function handle()
 
     if news_source == "google" then
         out[#out + 1] = '<center><small>' .. loc:upper() .. ' Edition <a href="/news/choose_edition">(Change)</a></small></center>'
+    elseif news_source ~= "hn" then
+        -- no edition for hn; other sources show nothing
     end
     out[#out + 1] = '<hr>'
 
@@ -234,7 +242,8 @@ local function handle()
         local raw_title  = string_utils.clean_str(item.title or "")
         local title, item_source = split_title_source(raw_title)
         local link        = item.link or ""
-        local article_url = "/news/article?loc=" .. loc .. "&a=" .. link
+        local source_param = news_source == "hn" and "&source=hn" or ""
+        local article_url = "/news/article?loc=" .. loc .. source_param .. "&a=" .. link
         local date_str    = format_date(item.pub_date)
 
         out[#out + 1] = '<h3><a href="' .. article_url .. '">' .. title .. '</a></h3>'
@@ -242,6 +251,10 @@ local function handle()
         local meta = item_source
         if date_str ~= "" then
             meta = meta .. (meta ~= "" and " - " or "") .. date_str
+        end
+        if item.comments and item.comments ~= "" then
+            local discuss = '<a href="' .. item.comments .. '">discuss</a>'
+            meta = meta .. (meta ~= "" and " - " or "") .. discuss
         end
         if meta ~= "" then
             out[#out + 1] = '<small>' .. meta .. '</small>'

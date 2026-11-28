@@ -64,21 +64,25 @@ local function handle()
         send_error(400, loc, "No article URL provided.", nil, nil)
     end
 
-    local ALLOWED_PREFIXES = {
-        "https://news.google.com/",
-        "https://www.npr.org/",
-        "https://www.bbc.com/",
-        "https://www.bbc.co.uk/",
-    }
+    local article_source = get_param("source") or ""
     local allowed = false
-    for _, prefix in ipairs(ALLOWED_PREFIXES) do
-        if article_url:sub(1, #prefix) == prefix then
-            allowed = true
-            break
+    if article_source == "hn" then
+        allowed = article_url:sub(1, 8) == "https://"
+    else
+        for _, prefix in ipairs({
+            "https://news.google.com/",
+            "https://www.npr.org/",
+            "https://www.bbc.com/",
+            "https://www.bbc.co.uk/",
+        }) do
+            if article_url:sub(1, #prefix) == prefix then
+                allowed = true
+                break
+            end
         end
     end
     if not allowed then
-        send_error(400, loc, "Invalid article URL.", "Only Google News, NPR, and BBC URLs are supported.", nil)
+        send_error(400, loc, "Invalid article URL.", "Unsupported source domain.", nil)
     end
 
     local actual_article_url

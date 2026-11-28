@@ -63,7 +63,10 @@ local function strip_cdata(s)
 end
 
 local function decode(s)
-    return strip_cdata(s:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">"))
+    s = s:gsub("&#x(%x+);", function(h) return string.char(tonumber(h, 16)) end)
+    s = s:gsub("&#(%d+);",  function(d) return string.char(tonumber(d))     end)
+    s = s:gsub("&nbsp;", " "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
+    return strip_cdata(s)
 end
 
 local function parse_xml_feed(body)
@@ -97,12 +100,17 @@ local function parse_xml_feed(body)
         local pd_match = item_html:match("<pubDate>(.-)</pubDate>")
         if pd_match then pub_date = pd_match end
 
+        local comments = ""
+        local c_match = item_html:match("<comments>(.-)</comments>")
+        if c_match then comments = decode(c_match) end
+
         if title ~= "" or link ~= "" then
             table.insert(feed.items, {
                 title       = title,
                 link        = link,
                 description = description,
                 pub_date    = pub_date,
+                comments    = comments,
             })
         end
     end
@@ -113,7 +121,14 @@ end
 function _M.fetch_feed(news_source, section, loc, lang)
     local url
 
-    if news_source == "npr" then
+    if news_source == "hn" then
+        local HN_SECTIONS = {
+            ask  = "https://hnrss.org/ask",
+            show = "https://hnrss.org/show",
+            jobs = "https://hnrss.org/jobs",
+        }
+        url = (section and HN_SECTIONS[section]) or "https://news.ycombinator.com/rss"
+    elseif news_source == "npr" then
         local feed_id = section and NPR_FEEDS[section] or "1001"
         url = "https://feeds.npr.org/" .. feed_id .. "/rss.xml"
     elseif news_source == "bbc" then
