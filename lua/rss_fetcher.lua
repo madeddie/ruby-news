@@ -127,7 +127,7 @@ function _M.fetch_feed(news_source, section, loc, lang)
             show = "https://hnrss.org/show",
             jobs = "https://hnrss.org/jobs",
         }
-        url = (section and HN_SECTIONS[section]) or "https://news.ycombinator.com/rss"
+        url = (section and HN_SECTIONS[section]) or "https://hnrss.org/frontpage"
     elseif news_source == "npr" then
         local feed_id = section and NPR_FEEDS[section] or "1001"
         url = "https://feeds.npr.org/" .. feed_id .. "/rss.xml"
