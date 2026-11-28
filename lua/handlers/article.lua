@@ -64,24 +64,39 @@ local function handle()
         send_error(400, loc, "No article URL provided.", nil, nil)
     end
 
-    if article_url:sub(1, 23) ~= "https://news.google.com" then
-        send_error(400, loc, "Invalid article URL.", "Only Google News URLs are supported.", nil)
+    local ALLOWED_PREFIXES = {
+        "https://news.google.com/",
+        "https://www.reuters.com/",
+        "https://reuters.com/",
+        "https://www.bbc.com/",
+        "https://www.bbc.co.uk/",
+    }
+    local allowed = false
+    for _, prefix in ipairs(ALLOWED_PREFIXES) do
+        if article_url:sub(1, #prefix) == prefix then
+            allowed = true
+            break
+        end
+    end
+    if not allowed then
+        send_error(400, loc, "Invalid article URL.", "Only Google News, Reuters, and BBC URLs are supported.", nil)
     end
 
-    local decoder = require "google_news_decoder"
-    local decode_result = decoder.decode_google_news_url(article_url)
-
-    if not decode_result.status then
-        send_error(502, loc,
-            "Could not resolve article link.",
-            "Google News URL decoding failed: " .. (decode_result.message or "unknown error"),
-            {
-                { url = article_url, label = "Open on Google News instead" },
-            }
-        )
+    local actual_article_url
+    if article_url:sub(1, 23) == "https://news.google.com" then
+        local decoder = require "google_news_decoder"
+        local decode_result = decoder.decode_google_news_url(article_url)
+        if not decode_result.status then
+            send_error(502, loc,
+                "Could not resolve article link.",
+                "Google News URL decoding failed: " .. (decode_result.message or "unknown error"),
+                { { url = article_url, label = "Open on Google News instead" } }
+            )
+        end
+        actual_article_url = decode_result.decoded_url
+    else
+        actual_article_url = article_url
     end
-
-    local actual_article_url = decode_result.decoded_url
 
     local extract = require "article_extract"
     local allowed_tags = "<ol><ul><li><br><p><small><font><b><strong><i><em><blockquote><h1><h2><h3><h4><h5><h6>"

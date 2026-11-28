@@ -16,11 +16,11 @@ local function get_param(name)
     return nil
 end
 
--- Split "Title - Source" into title and source
+-- Split "Title - Source" into title and source label
 local function split_title_source(title)
-    local source = title:match(" %- ([^%-]+)$")
-    if source then
-        return title:sub(1, #title - #source - 3), source
+    local src = title:match(" %- ([^%-]+)$")
+    if src then
+        return title:sub(1, #title - #src - 3), src
     end
     return title, ""
 end
@@ -88,11 +88,21 @@ a:visited { color: #a8c; }
 }
 --></style>]]
 
-local function handle()
-    local section = get_param("section")
-    local loc  = get_param("loc") or "US"
-    local lang = get_param("lang") or "en"
+local SOURCE_LABELS = {
+    google  = "Google News",
+    reuters = "Reuters",
+    bbc     = "BBC News",
+}
 
+local SOURCES = { "google", "reuters", "bbc" }
+
+local function handle()
+    local section    = get_param("section")
+    local loc        = get_param("loc") or "US"
+    local lang       = get_param("lang") or "en"
+    local news_source = get_param("source") or "google"
+
+    if not SOURCE_LABELS[news_source] then news_source = "google" end
     loc = loc:upper()
 
     local uri = ngx.var.request_uri or ""
@@ -103,7 +113,7 @@ local function handle()
     local cache     = ngx.shared.news_cache
     local feed
     local fetch_err
-    local cache_key = "feed:" .. loc .. ":" .. lang .. ":" .. (section or "all")
+    local cache_key = "feed:" .. news_source .. ":" .. loc .. ":" .. lang .. ":" .. (section or "all")
     if cache then
         local cached = cache:get(cache_key)
         if cached then
@@ -114,7 +124,7 @@ local function handle()
     end
     if not feed then
         local fetcher = require "rss_fetcher"
-        feed, fetch_err = fetcher.fetch_feed(section, loc, lang)
+        feed, fetch_err = fetcher.fetch_feed(news_source, section, loc, lang)
         if not feed then
             ngx.log(ngx.ERR, "fetch_feed failed: ", tostring(fetch_err))
         else
@@ -137,8 +147,8 @@ local function handle()
 
     if not feed.items or #feed.items == 0 then
         local msg = section
-            and ('No articles available for the <b>' .. section:upper() .. '</b> section in this location. <a href="/news?loc=' .. loc .. '">View top news instead.</a>')
-            or 'No articles available for this location. <a href="/news">View US top news.</a>'
+            and ('No articles available for the <b>' .. section:upper() .. '</b> section. <a href="/news?source=' .. news_source .. '&loc=' .. loc .. '">View top news instead.</a>')
+            or  'No articles available. <a href="/news">View US top news.</a>'
         local error_body =
             '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">' ..
             '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">' ..
@@ -148,17 +158,25 @@ local function handle()
         send_response(404, error_body)
     end
 
+    -- Build section nav (NATION only available on Google News)
+    local base = "source=" .. news_source .. "&loc=" .. loc
     local nav_links = {
-        { label = "TOP",           params = "loc=" .. loc },
-        { label = "WORLD",         params = "section=world&loc=" .. loc },
-        { label = "NATION",        params = "section=nation&loc=" .. loc },
-        { label = "BUSINESS",      params = "section=business&loc=" .. loc },
-        { label = "TECHNOLOGY",    params = "section=technology&loc=" .. loc },
-        { label = "ENTERTAINMENT", params = "section=entertainment&loc=" .. loc },
-        { label = "SPORTS",        params = "section=sports&loc=" .. loc },
-        { label = "SCIENCE",       params = "section=science&loc=" .. loc },
-        { label = "HEALTH",        params = "section=health&loc=" .. loc },
+        { label = "TOP",           params = base },
+        { label = "WORLD",         params = base .. "&section=world" },
     }
+    if news_source == "google" then
+        table.insert(nav_links, { label = "NATION", params = base .. "&section=nation" })
+    end
+    for _, v in ipairs({
+        { "BUSINESS",      "business" },
+        { "TECHNOLOGY",    "technology" },
+        { "ENTERTAINMENT", "entertainment" },
+        { "SPORTS",        "sports" },
+        { "SCIENCE",       "science" },
+        { "HEALTH",        "health" },
+    }) do
+        table.insert(nav_links, { label = v[1], params = base .. "&section=" .. v[2] })
+    end
 
     local out = {}
 
@@ -172,7 +190,21 @@ local function handle()
 
     out[#out + 1] = '<center><h1><b>flatland.nyc/news</b></h1></center>'
 
-    -- Nav
+    -- Source switcher
+    out[#out + 1] = '<center><small>'
+    local src_parts = {}
+    for _, sid in ipairs(SOURCES) do
+        if sid == news_source then
+            src_parts[#src_parts + 1] = '<b>' .. SOURCE_LABELS[sid] .. '</b>'
+        else
+            local sparams = "source=" .. sid .. "&loc=" .. loc .. (section and ("&section=" .. section) or "")
+            src_parts[#src_parts + 1] = '<a href="/news?' .. sparams .. '">' .. SOURCE_LABELS[sid] .. '</a>'
+        end
+    end
+    out[#out + 1] = table.concat(src_parts, " | ")
+    out[#out + 1] = '</small></center>'
+
+    -- Section nav
     out[#out + 1] = '<center><small>'
     local nav_parts = {}
     for _, link in ipairs(nav_links) do
@@ -185,7 +217,10 @@ local function handle()
     end
     out[#out + 1] = table.concat(nav_parts, " | ")
     out[#out + 1] = '</small></center>'
-    out[#out + 1] = '<center><small>' .. loc:upper() .. ' Edition <a href="/news/choose_edition">(Change)</a></small></center>'
+
+    if news_source == "google" then
+        out[#out + 1] = '<center><small>' .. loc:upper() .. ' Edition <a href="/news/choose_edition">(Change)</a></small></center>'
+    end
     out[#out + 1] = '<hr>'
 
     if section then
@@ -195,14 +230,14 @@ local function handle()
     -- Articles
     for _, item in ipairs(feed.items) do
         local raw_title  = string_utils.clean_str(item.title or "")
-        local title, source = split_title_source(raw_title)
-        local link       = item.link or ""
+        local title, item_source = split_title_source(raw_title)
+        local link        = item.link or ""
         local article_url = "/news/article?loc=" .. loc .. "&a=" .. link
-        local date_str   = format_date(item.pub_date)
+        local date_str    = format_date(item.pub_date)
 
         out[#out + 1] = '<h3><a href="' .. article_url .. '">' .. title .. '</a></h3>'
 
-        local meta = source
+        local meta = item_source
         if date_str ~= "" then
             meta = meta .. (meta ~= "" and " - " or "") .. date_str
         end
@@ -225,7 +260,7 @@ local function handle()
     end
 
     out[#out + 1] = '<hr>'
-    out[#out + 1] = '<center><small>Powered by Lua on nginx | Headlines from <a href="https://news.google.com/">Google News</a></small></center>'
+    out[#out + 1] = '<center><small>Powered by Lua on nginx | ' .. SOURCE_LABELS[news_source] .. '</small></center>'
     out[#out + 1] = '</body></html>'
 
     send_response(200, table.concat(out))

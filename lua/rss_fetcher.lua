@@ -1,5 +1,25 @@
 local _M = {}
 
+local REUTERS_SECTIONS = {
+    world         = "worldNews",
+    business      = "businessNews",
+    technology    = "technologyNews",
+    health        = "healthNews",
+    sports        = "sportsNews",
+    science       = "scienceNews",
+    entertainment = "entertainmentNews",
+}
+
+local BBC_SECTIONS = {
+    world         = "world",
+    business      = "business",
+    technology    = "technology",
+    health        = "health",
+    sports        = "sport",
+    science       = "science_and_environment",
+    entertainment = "entertainment_and_arts",
+}
+
 local function http_get(url)
     local http = require "resty.http"
 
@@ -11,11 +31,10 @@ local function http_get(url)
         ssl_verify = false,
     }
 
-    -- Follow up to 5 redirects, creating a fresh client each time
     for _ = 1, 5 do
-        local httpc2 = http.new()
-        httpc2:set_timeout(15000)
-        local res, err = httpc2:request_uri(url, opts)
+        local httpc = http.new()
+        httpc:set_timeout(15000)
+        local res, err = httpc:request_uri(url, opts)
         if not res then
             ngx.log(ngx.ERR, "http_get failed: ", err)
             return nil, "request failed: " .. tostring(err)
@@ -38,10 +57,7 @@ local function http_get(url)
 end
 
 local function parse_xml_feed(body)
-    local feed = {
-        title = "",
-        items = {},
-    }
+    local feed = { title = "", items = {} }
 
     local title_match = body:match("<title>(.-)</title>")
     if title_match then
@@ -60,76 +76,67 @@ local function parse_xml_feed(body)
         local item_html = body:sub(item_start, item_end_tag + 7)
         items_start = item_end_tag + 7
 
-        local title = ""
-        local link = ""
-        local description = ""
-        local pub_date = ""
-        local images = {}
+        local title, link, description, pub_date = "", "", "", ""
 
         local t_match = item_html:match("<title>(.-)</title>")
         if t_match then
-            t_match = t_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-            title = t_match
+            title = t_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
         end
 
         local l_match = item_html:match("<link>(.-)</link>")
         if l_match then
-            l_match = l_match:gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-            link = l_match
+            link = l_match:gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
         end
 
         local d_match = item_html:match("<description>(.-)</description>")
         if d_match then
-            d_match = d_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-            description = d_match
+            description = d_match:gsub("&nbsp;", " - "):gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
         end
 
         local pd_match = item_html:match("<pubDate>(.-)</pubDate>")
-        if pd_match then
-            pub_date = pd_match
-        end
+        if pd_match then pub_date = pd_match end
 
-        for img_url in item_html:gmatch('url=["\']([^"\']+)["\']') do
-            if not images[img_url] then
-                table.insert(images, img_url)
-            end
-        end
-
-        local item = {
-            title = title,
-            link = link,
-            description = description,
-            pub_date = pub_date,
-            images = images,
-        }
-
-        if title or link then
-            table.insert(feed.items, item)
+        if title ~= "" or link ~= "" then
+            table.insert(feed.items, {
+                title       = title,
+                link        = link,
+                description = description,
+                pub_date    = pub_date,
+            })
         end
     end
 
     return feed
 end
 
-function _M.fetch_feed(section, loc, lang)
+function _M.fetch_feed(news_source, section, loc, lang)
     local url
 
-    if section then
-        url = string.format(
-            "https://news.google.com/rss/headlines/section/topic/%s?ned=%s&hl=%s",
-            section:upper(), loc, lang
-        )
+    if news_source == "reuters" then
+        local feed_name = section and REUTERS_SECTIONS[section] or "topNews"
+        url = "https://feeds.reuters.com/reuters/" .. feed_name
+    elseif news_source == "bbc" then
+        local feed_name = section and BBC_SECTIONS[section]
+        url = feed_name
+            and ("https://feeds.bbci.co.uk/news/" .. feed_name .. "/rss.xml")
+            or  "https://feeds.bbci.co.uk/news/rss.xml"
     else
-        url = string.format(
-            "https://news.google.com/rss?gl=%s&hl=%s-%s&ceid=%s:%s",
-            loc, lang, loc, loc, lang
-        )
+        if section then
+            url = string.format(
+                "https://news.google.com/rss/headlines/section/topic/%s?ned=%s&hl=%s",
+                section:upper(), loc, lang
+            )
+        else
+            url = string.format(
+                "https://news.google.com/rss?gl=%s&hl=%s-%s&ceid=%s:%s",
+                loc, lang, loc, loc, lang
+            )
+        end
     end
 
     local body, err = http_get(url)
     if body and #body > 0 then
-        local feed = parse_xml_feed(body)
-        return feed
+        return parse_xml_feed(body)
     end
 
     return nil, err or "empty response"
